@@ -26,7 +26,6 @@ def scomp_decoder(test_matrix, test_outcomes):
     pd_indices = comp_decoder(test_matrix, test_outcomes) - 1
     pos_tests = np.delete(np.arange(0, test_matrix.shape[0], 1), np.where(test_outcomes == 0)[0])
     unexplained_tests = pos_tests[np.where(np.sum(test_matrix[pos_tests].T[dd_indices].T, axis = 1) == 0)[0]]
-    print(unexplained_tests)
     while(len(unexplained_tests) > 0):
         ignored_indices = np.nonzero(np.in1d(pd_indices, scomp_indices))[0]
         most_unexplained = np.argmax(np.sum(test_matrix[unexplained_tests].T[np.delete(pd_indices, ignored_indices)].T, axis = 0))
