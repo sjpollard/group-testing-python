@@ -1,4 +1,6 @@
+import math
 import numpy as np
+rng = np.random.default_rng()
 
 #input test_matrix of shape (T, n) and test_outcomes of shape (T, 1)
 #output COMP defective set estimate
@@ -34,6 +36,17 @@ def scomp_decoder(test_matrix, test_outcomes):
         np.where(test_matrix[unexplained_tests].T[pd_indices][most_unexplained] == 1)[0])
     return np.sort(scomp_indices) + 1
 
+def test_generator(num_items, alpha):
+    num_defect = math.floor(math.pow(num_items, alpha))
+    prob = 1.0 / num_defect
+    num_tests = math.ceil(math.log2(math.comb(num_items, num_defect)))
+    test_defectives = np.sort(rng.choice(np.arange(1, num_items + 1), num_defect, replace=False))
+    defectivity_vector = np.zeros((1, num_items), dtype=int)
+    np.put(defectivity_vector, test_defectives - 1, 1)
+    test_matrix = rng.choice([0, 1], (num_tests, num_items), [1 - prob, prob])
+    test_outcomes = np.array([np.where(np.sum(test_matrix * defectivity_vector, axis=1) > 0, 1, 0)])
+    return test_matrix, test_outcomes, test_defectives
+
 def main():
     test_matrix = np.array([[1, 1, 1, 1, 0, 0, 0, 0], 
                            [0, 0, 0, 1, 1, 1, 0, 1], 
@@ -47,6 +60,8 @@ def main():
                             [0, 1, 1, 0, 1, 1, 0],
                             [1, 0, 1, 1, 0, 1, 0]])
     test_outcomes2 = np.array([[0], [1], [0], [1], [1]])
+    test = test_generator(8, 0.5)
+    print(comp_decoder(test[0], test[1]), test[2])
     
 if __name__ == "__main__":
     main()
