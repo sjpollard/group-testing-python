@@ -43,9 +43,9 @@ def test_generator(num_items, alpha):
     test_defectives = np.sort(rng.choice(np.arange(1, num_items + 1), num_defect, replace=False))
     defectivity_vector = np.zeros((1, num_items), dtype=int)
     np.put(defectivity_vector, test_defectives - 1, 1)
-    test_matrix = rng.choice([0, 1], (num_tests, num_items), [1 - prob, prob])
+    test_matrix = rng.choice([0, 1], (num_tests, num_items), p=[1 - prob, prob])
     test_outcomes = np.array([np.where(np.sum(test_matrix * defectivity_vector, axis=1) > 0, 1, 0)])
-    return test_matrix, test_outcomes, test_defectives
+    return test_matrix, test_outcomes.T, test_defectives
 
 def main():
     test_matrix = np.array([[1, 1, 1, 1, 0, 0, 0, 0], 
