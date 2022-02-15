@@ -24,15 +24,12 @@ def dd_decoder(test_matrix, test_outcomes):
 #output SCOMP defective set estimate
 def scomp_decoder(test_matrix, test_outcomes):
     dd_indices = dd_decoder(test_matrix, test_outcomes) - 1
-    print("K_dd:", dd_indices + 1)
     scomp_indices = dd_indices
     pd_indices = comp_decoder(test_matrix, test_outcomes) - 1
     pos_tests = np.delete(np.arange(0, test_matrix.shape[0], 1), np.where(test_outcomes == 0)[0])
     unexplained_tests = pos_tests[np.where(np.sum(test_matrix[pos_tests].T[dd_indices].T, axis = 1) == 0)[0]]
     while(len(unexplained_tests) > 0):
-        print("unex:", unexplained_tests)
         ignored_indices = np.nonzero(np.in1d(pd_indices, scomp_indices))[0]
-        print("sum:", np.sum(test_matrix[unexplained_tests].T[np.delete(pd_indices, ignored_indices)].T, axis = 0))
         most_unexplained = np.argmax(np.sum(test_matrix[unexplained_tests].T[np.delete(pd_indices, ignored_indices)].T, axis = 0))
         scomp_indices = np.append(scomp_indices, np.delete(pd_indices, ignored_indices)[most_unexplained])
         unexplained_tests = np.delete(unexplained_tests, 
@@ -73,9 +70,9 @@ def main():
     print(test[0])
     print()
     print(test[1])
-    #print(comp_decoder(test[0], test[1]), test[2])
-    #print(dd_decoder(test[0], test[1]), test[2])
-    print(scomp_decoder(test_matrix3, test_outcomes3))
+    print(comp_decoder(test[0], test[1]), test[2])
+    print(dd_decoder(test[0], test[1]), test[2])
+    print(scomp_decoder(test[0], test[1]), test[2])
     
 if __name__ == "__main__":
     main()
