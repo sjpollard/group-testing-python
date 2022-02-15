@@ -17,29 +17,32 @@ def dd_decoder(test_matrix, test_outcomes):
     pos_tests = np.delete(np.arange(0, test_matrix.shape[0], 1), np.where(test_outcomes == 0)[0])
     trunc_matrix = test_matrix.T[pd_indices].T[pos_tests]
     test_indices = np.where(np.sum(trunc_matrix, axis = 1) == 1)[0]
-    dd_indices = pd_indices[np.where(trunc_matrix[test_indices] == 1)[1]]
+    dd_indices = pd_indices[np.unique(np.where(trunc_matrix[test_indices] == 1)[1])]
     return dd_indices + 1
 
 #input test_matrix of shape (T, n) and test_outcomes of shape (T, 1)
 #output SCOMP defective set estimate
 def scomp_decoder(test_matrix, test_outcomes):
     dd_indices = dd_decoder(test_matrix, test_outcomes) - 1
+    print("K_dd:", dd_indices + 1)
     scomp_indices = dd_indices
     pd_indices = comp_decoder(test_matrix, test_outcomes) - 1
     pos_tests = np.delete(np.arange(0, test_matrix.shape[0], 1), np.where(test_outcomes == 0)[0])
     unexplained_tests = pos_tests[np.where(np.sum(test_matrix[pos_tests].T[dd_indices].T, axis = 1) == 0)[0]]
     while(len(unexplained_tests) > 0):
+        print("unex:", unexplained_tests)
         ignored_indices = np.nonzero(np.in1d(pd_indices, scomp_indices))[0]
+        print("sum:", np.sum(test_matrix[unexplained_tests].T[np.delete(pd_indices, ignored_indices)].T, axis = 0))
         most_unexplained = np.argmax(np.sum(test_matrix[unexplained_tests].T[np.delete(pd_indices, ignored_indices)].T, axis = 0))
         scomp_indices = np.append(scomp_indices, np.delete(pd_indices, ignored_indices)[most_unexplained])
         unexplained_tests = np.delete(unexplained_tests, 
-        np.where(test_matrix[unexplained_tests].T[pd_indices][most_unexplained] == 1)[0])
+        np.where(test_matrix[unexplained_tests].T[np.delete(pd_indices, ignored_indices)][most_unexplained] == 1)[0])
     return np.sort(scomp_indices) + 1
 
-def test_generator(num_items, alpha):
-    num_defect = math.floor(math.pow(num_items, alpha))
+def test_generator(num_items, num_tests, num_defect):
+    #num_defect = math.floor(math.pow(num_items, alpha))
     prob = 1.0 / num_defect
-    num_tests = math.ceil(math.log2(math.comb(num_items, num_defect)))
+    #num_tests = math.ceil(math.log2(math.comb(num_items, num_defect)))
     test_defectives = np.sort(rng.choice(np.arange(1, num_items + 1), num_defect, replace=False))
     defectivity_vector = np.zeros((1, num_items), dtype=int)
     np.put(defectivity_vector, test_defectives - 1, 1)
@@ -60,8 +63,19 @@ def main():
                             [0, 1, 1, 0, 1, 1, 0],
                             [1, 0, 1, 1, 0, 1, 0]])
     test_outcomes2 = np.array([[0], [1], [0], [1], [1]])
-    test = test_generator(8, 0.5)
-    print(comp_decoder(test[0], test[1]), test[2])
+    test_matrix3 = np.array([[1, 0, 0, 1, 1, 0, 0, 0],
+                            [1, 1, 0, 0, 1, 1, 1, 0],
+                            [1, 0, 1, 0, 0, 0, 1, 0],
+                            [0, 1, 0, 0, 0, 1, 1, 1],
+                            [0, 0, 1, 0, 0, 1, 0, 1]])
+    test_outcomes3 = np.array([[1], [1], [0], [1], [0]])   
+    test = test_generator(8, 5, 2)
+    print(test[0])
+    print()
+    print(test[1])
+    #print(comp_decoder(test[0], test[1]), test[2])
+    #print(dd_decoder(test[0], test[1]), test[2])
+    print(scomp_decoder(test_matrix3, test_outcomes3))
     
 if __name__ == "__main__":
     main()
