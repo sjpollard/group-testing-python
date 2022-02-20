@@ -81,6 +81,16 @@ def vary_alpha(num_items, num_tests, size):
         results[i] = empirical_rate(num_items, num_tests, math.ceil(math.pow(num_items, i/float(100))), size)
     return results.T
 
+def determine_num_tests(num_items, max_defects, size, error):
+    threshold = 1 - error
+    results = np.zeros((max_defects, 3))
+    for i in range(1, max_defects + 1):
+        result = vary_tests(num_items, i, size)
+        results[i - 1][0] = np.argmax(result[0] > threshold)
+        results[i - 1][1] = np.argmax(result[1] > threshold)
+        results[i - 1][2] = np.argmax(result[2] > threshold)
+    return results.T + 1
+
 def plot_results_tests(results):
     plt.scatter(range(1, results.shape[1] + 1), results[0], c="b", marker="x", label="COMP")
     plt.scatter(range(1, results.shape[1] + 1), results[1], c="r", marker="x", label="DD")
@@ -108,6 +118,15 @@ def plot_results_alpha(results):
     plt.ylabel("success probability")
     plt.show()
 
+def plot_determine_tests(results):
+    plt.scatter(range(1, results.shape[1] + 1), results[0], c="b", marker="x", label="COMP")
+    plt.scatter(range(1, results.shape[1] + 1), results[1], c="r", marker="x", label="DD")
+    plt.scatter(range(1, results.shape[1] + 1), results[2], c="g", marker="x", label="SCOMP")
+    plt.legend(loc='upper left')
+    plt.xlabel("number of defectives")
+    plt.ylabel("number of tests required")
+    plt.show()
+
 def main():
     test_matrix = np.array([[1, 1, 1, 1, 0, 0, 0, 0], 
                            [0, 0, 0, 1, 1, 1, 0, 1], 
@@ -130,6 +149,7 @@ def main():
     #plot_results_tests(vary_tests(100, 5, 100))
     #plot_results_defects(vary_defects(100, 60, 100))
     #plot_results_alpha(vary_alpha(100, 60, 100))    
+    plot_determine_tests(determine_num_tests(100, 10, 100, 0.05))
     
 if __name__ == "__main__":
     main()
