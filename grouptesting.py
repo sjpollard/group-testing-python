@@ -1,7 +1,10 @@
+from cProfile import label
 import math
+from unittest import result
+import scipy.stats as ss
 import numpy as np
 from matplotlib import pyplot as plt
-rng = np.random.default_rng()
+rng = np.random.default_rng(2022)
 
 #input test_matrix of shape (T, n) and test_outcomes of shape (T, 1)
 #output COMP defective set estimate
@@ -40,7 +43,7 @@ def scomp_decoder(test_matrix, test_outcomes):
 #input n, T and k
 #output test matrix, test outcomes and defective set according to Bernoulli design
 def test_generator(num_items, num_tests, num_defect):
-    prob = 1.0 / num_defect
+    prob = 1.0 / num_defect if num_defect != 1 else 0.5
     test_defectives = np.sort(rng.choice(np.arange(1, num_items + 1), num_defect, replace=False))
     defectivity_vector = np.zeros((1, num_items), dtype=int)
     np.put(defectivity_vector, test_defectives - 1, 1)
@@ -75,6 +78,12 @@ def vary_defects(num_items, num_tests, size):
         results[i - 1] = empirical_rate(num_items, num_tests, i, size)
     return results.T
 
+def vary_items(num_tests, num_defect, size):
+    results = np.zeros((96, 3))
+    for i in range(5, 100):
+        results[i - 5] = empirical_rate(i, num_tests, num_defect, size)
+    return results.T
+
 def vary_alpha(num_items, num_tests, size):
     results = np.zeros((100, 3))
     for i in range(0, 100):
@@ -91,22 +100,50 @@ def determine_num_tests(num_items, max_defects, size, error):
         results[i - 1][2] = np.argmax(result[2] > threshold)
     return results.T + 1
 
+def closest_to(array, value):
+    absolute_val =  np.abs(array - value)
+    return np.argmin(absolute_val)
+
 def plot_results_tests(results):
+    plt.title("Success probability vs Tests")
     plt.scatter(range(1, results.shape[1] + 1), results[0], c="b", marker="x", label="COMP")
     plt.scatter(range(1, results.shape[1] + 1), results[1], c="r", marker="x", label="DD")
     plt.scatter(range(1, results.shape[1] + 1), results[2], c="g", marker="x", label="SCOMP")
     plt.legend(loc='upper left')
-    plt.xlabel("number of tests")
-    plt.ylabel("success probability")
+    plt.xlabel("Number of tests")
+    plt.ylabel("Success probability")
+    plt.show()
+
+def plot_results_tests_gaussian(results):
+    plt.title("Success probability vs Tests with Gaussian")
+    g_x = np.linspace(1, 100, 5000)
+    g_cdf = ss.norm.cdf(g_x, closest_to(results[2], 0.5), 10)
+    plt.plot(g_x, g_cdf, c="black", label="Gaussian CDF")
+    plt.scatter(range(1, results.shape[1] + 1), results[2], c="g", marker="x", label="SCOMP")
+    plt.legend(loc='upper left')
+    plt.xlabel("Number of tests")
+    plt.ylabel("Success probability")
     plt.show()
 
 def plot_results_defects(results):
+    plt.title("Success probability vs Defectives")
     plt.scatter(range(1, results.shape[1] + 1), results[0], c="b", marker="x", label="COMP")
     plt.scatter(range(1, results.shape[1] + 1), results[1], c="r", marker="x", label="DD")
     plt.scatter(range(1, results.shape[1] + 1), results[2], c="g", marker="x", label="SCOMP")
     plt.legend(loc='upper right')
-    plt.xlabel("number of defectives")
-    plt.ylabel("success probability")
+    plt.xlabel("Number of defectives")
+    plt.ylabel("Success probability")
+    plt.show()
+
+def plot_results_items(results):
+    plt.title("Success probability vs Items")
+    plt.scatter(range(5, 100 + 1), results[0], c="b", marker="x", label="COMP")
+    plt.scatter(range(5, 100 + 1), results[1], c="r", marker="x", label="DD")
+    plt.scatter(range(5, 100 + 1), results[2], c="g", marker="x", label="SCOMP")
+    plt.legend(loc='lower left')
+    plt.xlim([0, 101])
+    plt.xlabel("Number of items")
+    plt.ylabel("Success probability")
     plt.show()
 
 def plot_results_alpha(results):
@@ -145,11 +182,13 @@ def main():
                             [1, 0, 1, 0, 0, 0, 1, 0],
                             [0, 1, 0, 0, 0, 1, 1, 1],
                             [0, 0, 1, 0, 0, 1, 0, 1]])
-    test_outcomes3 = np.array([[1], [1], [0], [1], [0]])   
-    #plot_results_tests(vary_tests(100, 5, 100))
-    #plot_results_defects(vary_defects(100, 60, 100))
+    test_outcomes3 = np.array([[1], [1], [0], [1], [0]]) 
+    plot_results_items(vary_items(60, 5, 1000))
+    #plot_results_tests_gaussian(vary_tests(100, 5, 1000))
+    #plot_results_tests(vary_tests(100, 5, 1000))
+    #plot_results_defects(vary_defects(100, 60, 1000))
     #plot_results_alpha(vary_alpha(100, 60, 100))    
-    plot_determine_tests(determine_num_tests(100, 10, 100, 0.05))
+    #plot_determine_tests(determine_num_tests(100, 10, 100, 0.05))
     
 if __name__ == "__main__":
     main()
