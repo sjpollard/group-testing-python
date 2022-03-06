@@ -80,7 +80,7 @@ def vary_defects(num_items, num_tests, size):
 
 def vary_items(num_tests, num_defect, size):
     results = np.zeros((96, 3))
-    for i in range(5, 100):
+    for i in range(5, 101):
         results[i - 5] = empirical_rate(i, num_tests, num_defect, size)
     return results.T
 
