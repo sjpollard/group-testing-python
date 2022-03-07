@@ -117,7 +117,7 @@ def plot_results_tests(results):
 def plot_results_tests_gaussian(results):
     plt.title("Success probability vs Tests with Gaussian")
     g_x = np.linspace(1, 100, 5000)
-    g_cdf = ss.norm.cdf(g_x, closest_to(results[2], 0.5), 10)
+    g_cdf = ss.norm.cdf(g_x, closest_to(results[2], 0.5) + 1, 10)
     plt.plot(g_x, g_cdf, c="black", label="Gaussian CDF")
     plt.scatter(range(1, results.shape[1] + 1), results[2], c="g", marker="x", label="SCOMP")
     plt.legend(loc='upper left')
@@ -183,8 +183,8 @@ def main():
                             [0, 1, 0, 0, 0, 1, 1, 1],
                             [0, 0, 1, 0, 0, 1, 0, 1]])
     test_outcomes3 = np.array([[1], [1], [0], [1], [0]]) 
-    plot_results_items(vary_items(60, 5, 1000))
-    #plot_results_tests_gaussian(vary_tests(100, 5, 1000))
+    #plot_results_items(vary_items(60, 5, 1000))
+    plot_results_tests_gaussian(vary_tests(100, 5, 1000))
     #plot_results_tests(vary_tests(100, 5, 1000))
     #plot_results_defects(vary_defects(100, 60, 1000))
     #plot_results_alpha(vary_alpha(100, 60, 100))    
