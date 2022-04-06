@@ -1,10 +1,10 @@
-from cProfile import label
 import math
-from unittest import result
 import scipy.stats as ss
 import numpy as np
 from matplotlib import pyplot as plt
-rng = np.random.default_rng(2022)
+from sklearn import svm
+rng1 = np.random.default_rng(2022)
+rng2 = np.random.default_rng(0)
 
 #input test_matrix of shape (T, n) and test_outcomes of shape (T, 1)
 #output COMP defective set estimate
@@ -42,7 +42,7 @@ def scomp_decoder(test_matrix, test_outcomes):
 
 #input n, T and k
 #output test matrix, test outcomes and defective set according to Bernoulli design
-def test_generator(num_items, num_tests, num_defect):
+def test_generator(num_items, num_tests, num_defect, rng):
     prob = 1.0 / num_defect if num_defect != 1 else 0.5
     test_defectives = np.sort(rng.choice(np.arange(1, num_items + 1), num_defect, replace=False))
     defectivity_vector = np.zeros((1, num_items), dtype=int)
@@ -56,7 +56,7 @@ def test_generator(num_items, num_tests, num_defect):
 def empirical_rate(num_items, num_tests, num_defect, size):
     correct_tests = np.array([[0, 0, 0]])
     for i in range(size):
-        sample = test_generator(num_items, num_tests, num_defect)
+        sample = test_generator(num_items, num_tests, num_defect, rng1)
         correct_tests[0][0] += np.array_equal(comp_decoder(sample[0], sample[1]), sample[2])
         correct_tests[0][1] += np.array_equal(dd_decoder(sample[0], sample[1]), sample[2])
         correct_tests[0][2] += np.array_equal(scomp_decoder(sample[0], sample[1]), sample[2])
@@ -103,6 +103,20 @@ def determine_num_tests(num_items, max_defects, size, error):
 def closest_to(array, value):
     absolute_val =  np.abs(array - value)
     return np.argmin(absolute_val)
+
+def train_svc(num_items, num_tests, num_defects, size):
+    x_train = np.empty((size, (num_items + 1) * num_tests))
+    y_train = np.empty(size)
+    for i in range(size):
+        gen = test_generator(num_items, num_tests, num_defects, rng2)
+        x_train[i] = np.hstack((gen[0], gen[1])).flatten()
+        y = 0
+        for j in gen[2]:
+            y += 2 ** (j-1)
+        y_train[i] = y
+    classifier = svm.SVC()
+    classifier.fit(x_train, y_train)
+    return classifier
 
 def plot_results_tests(results):
     plt.title("Success probability vs Tests")
@@ -184,11 +198,15 @@ def main():
                             [0, 0, 1, 0, 0, 1, 0, 1]])
     test_outcomes3 = np.array([[1], [1], [0], [1], [0]]) 
     #plot_results_items(vary_items(60, 5, 1000))
-    plot_results_tests_gaussian(vary_tests(100, 5, 1000))
+    #plot_results_tests_gaussian(vary_tests(100, 5, 1000))
     #plot_results_tests(vary_tests(100, 5, 1000))
     #plot_results_defects(vary_defects(100, 60, 1000))
     #plot_results_alpha(vary_alpha(100, 60, 100))    
     #plot_determine_tests(determine_num_tests(100, 10, 100, 0.05))
+    classifier = train_svc(10, 10, 1, 10000)
+    test = test_generator(10, 10, 1, np.random.default_rng())
+    print("true label", test[2])
+    print("predicted label", (int)(math.log2(classifier.predict([np.hstack((test[0], test[1])).flatten()])) + 1))
     
 if __name__ == "__main__":
     main()
