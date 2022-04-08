@@ -104,11 +104,11 @@ def closest_to(array, value):
     absolute_val =  np.abs(array - value)
     return np.argmin(absolute_val)
 
-def train_svc(num_items, num_tests, num_defects, size):
+def train_svc(num_items, num_tests, num_defect, size):
     x_train = np.empty((size, (num_items + 1) * num_tests))
     y_train = np.empty(size)
     for i in range(size):
-        gen = test_generator(num_items, num_tests, num_defects, rng2)
+        gen = test_generator(num_items, num_tests, num_defect, rng2)
         x_train[i] = np.hstack((gen[0], gen[1])).flatten()
         y = 0
         for j in gen[2]:
@@ -117,6 +117,44 @@ def train_svc(num_items, num_tests, num_defects, size):
     classifier = svm.SVC()
     classifier.fit(x_train, y_train)
     return classifier
+
+def svc_decoder(classifier, test_matrix, test_outcomes):
+    defects = np.array([], dtype=int)
+    x = [np.hstack((test_matrix, test_outcomes)).flatten()]
+    y = classifier.predict(x)
+    binary = bin(int(y[0])).replace("0b", "")[::-1]
+    for i in range(len(binary)):
+        if (binary[i] == "1"):
+            defects = np.append(defects, i + 1)
+    return defects
+
+def empirical_rate_svc(classifier, num_items, num_tests, num_defect, size, rng):
+    correct_tests = np.array([[0, 0, 0, 0]])
+    for i in range(size):
+        sample = test_generator(num_items, num_tests, num_defect, rng)
+        correct_tests[0][0] += np.array_equal(comp_decoder(sample[0], sample[1]), sample[2])
+        correct_tests[0][1] += np.array_equal(dd_decoder(sample[0], sample[1]), sample[2])
+        correct_tests[0][2] += np.array_equal(scomp_decoder(sample[0], sample[1]), sample[2])
+        correct_tests[0][3] += np.array_equal(svc_decoder(classifier, sample[0], sample[1]), sample[2])
+    return(correct_tests/float(size))
+
+def vary_tests_svc(num_items, num_defect, size, rng):
+    results = np.zeros((num_items, 4))
+    for i in range(1, num_items + 1):
+        classifier = train_svc(num_items, i, num_defect, 1000)
+        results[i - 1] = empirical_rate_svc(classifier, num_items, i, num_defect, size, rng)
+    return results.T
+
+def plot_results_tests_svc(results):
+    plt.title("Success probability vs Tests")
+    plt.scatter(range(1, results.shape[1] + 1), results[0], c="b", marker="x", label="COMP")
+    plt.scatter(range(1, results.shape[1] + 1), results[1], c="r", marker="x", label="DD")
+    plt.scatter(range(1, results.shape[1] + 1), results[2], c="g", marker="x", label="SCOMP")
+    plt.scatter(range(1, results.shape[1] + 1), results[3], c="m", marker="x", label="GTSVM")
+    plt.legend(loc='upper left')
+    plt.xlabel("Number of tests")
+    plt.ylabel("Success probability")
+    plt.show()
 
 def plot_results_tests(results):
     plt.title("Success probability vs Tests")
@@ -203,10 +241,9 @@ def main():
     #plot_results_defects(vary_defects(100, 60, 1000))
     #plot_results_alpha(vary_alpha(100, 60, 100))    
     #plot_determine_tests(determine_num_tests(100, 10, 100, 0.05))
-    classifier = train_svc(10, 10, 1, 10000)
-    test = test_generator(10, 10, 1, np.random.default_rng())
-    print("true label", test[2])
-    print("predicted label", (int)(math.log2(classifier.predict([np.hstack((test[0], test[1])).flatten()])) + 1))
+    #classifier = train_svc(10, 10, 1, 10000)
+    #print(empirical_rate_svc(classifier, 10, 10, 1, 1000, np.random.default_rng()))
+    plot_results_tests_svc(vary_tests_svc(10, 1, 1000, np.random.default_rng()))
     
 if __name__ == "__main__":
     main()
