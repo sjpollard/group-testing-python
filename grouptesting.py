@@ -73,8 +73,8 @@ def vary_tests(num_items, num_defect, size):
 #input fixed n and T
 #output list of empirical rates as k varies
 def vary_defects(num_items, num_tests, size):
-    results = np.zeros((num_items, 3))
-    for i in range(1, num_items + 1):
+    results = np.zeros((15, 3))
+    for i in range(1, 14 + 1):
         results[i - 1] = empirical_rate(num_items, num_tests, i, size)
     return results.T
 
@@ -141,9 +141,31 @@ def empirical_rate_svc(classifier, num_items, num_tests, num_defect, size, rng):
 def vary_tests_svc(num_items, num_defect, size, rng):
     results = np.zeros((num_items, 4))
     for i in range(1, num_items + 1):
-        classifier = train_svc(num_items, i, num_defect, 1000)
+        classifier = train_svc(num_items, i, num_defect, 100000)
         results[i - 1] = empirical_rate_svc(classifier, num_items, i, num_defect, size, rng)
     return results.T
+
+def empirical_rate_count(num_items, num_tests, num_defect, size, rng):
+    correct_tests = np.array([[0, 0, 0]])
+    for i in range(size):
+        sample = test_generator(num_items, num_tests, num_defect, rng)
+        correct_tests[0][0] += comp_decoder(sample[0], sample[1]).size == sample[2].size
+        correct_tests[0][1] += dd_decoder(sample[0], sample[1]).size == sample[2].size
+        correct_tests[0][2] += scomp_decoder(sample[0], sample[1]).size == sample[2].size
+    return(correct_tests/float(size))
+
+def vary_tests_count(num_items, num_defect, size, rng):
+    results = np.zeros((num_items, 3))
+    for i in range(1, num_items + 1):
+        results[i - 1] = empirical_rate_count(num_items, i, num_defect, size, rng)
+    return results.T
+
+def vary_defects_count(num_items, num_tests, size, rng):
+    results = np.zeros((15, 3))
+    for i in range(1, 14 + 1):
+        results[i - 1] = empirical_rate_count(num_items, num_tests, i, size, rng)
+    return results.T
+
 
 def plot_results_tests_svc(results):
     plt.title("Success probability vs Tests")
@@ -153,6 +175,32 @@ def plot_results_tests_svc(results):
     plt.scatter(range(1, results.shape[1] + 1), results[3], c="m", marker="x", label="GTSVM")
     plt.legend(loc='upper left')
     plt.xlabel("Number of tests")
+    plt.ylabel("Success probability")
+    plt.show()
+
+def plot_results_tests_count(results, results2):
+    plt.title("Success probability vs Tests")
+    plt.scatter(range(1, results2.shape[1] + 1), results2[0], c="grey", marker="x")
+    plt.scatter(range(1, results2.shape[1] + 1), results2[1], c="grey", marker="x")
+    plt.scatter(range(1, results2.shape[1] + 1), results2[2], c="grey", marker="x")
+    plt.scatter(range(1, results.shape[1] + 1), results[0], c="b", marker="x", label="COMP")
+    plt.scatter(range(1, results.shape[1] + 1), results[1], c="r", marker="x", label="DD")
+    plt.scatter(range(1, results.shape[1] + 1), results[2], c="g", marker="x", label="SCOMP")
+    plt.legend(loc='upper left')
+    plt.xlabel("Number of tests")
+    plt.ylabel("Success probability")
+    plt.show()
+
+def plot_results_defects_count(results, results2):
+    plt.title("Success probability vs Defectives")
+    plt.scatter(range(1, results2.shape[1] + 1), results2[0], c="grey", marker="x")
+    plt.scatter(range(1, results2.shape[1] + 1), results2[1], c="grey", marker="x")
+    plt.scatter(range(1, results2.shape[1] + 1), results2[2], c="grey", marker="x")
+    plt.scatter(range(1, results.shape[1] + 1), results[0], c="b", marker="x", label="COMP")
+    plt.scatter(range(1, results.shape[1] + 1), results[1], c="r", marker="x", label="DD")
+    plt.scatter(range(1, results.shape[1] + 1), results[2], c="g", marker="x", label="SCOMP")
+    plt.legend(loc='upper right')
+    plt.xlabel("Number of defectives")
     plt.ylabel("Success probability")
     plt.show()
 
@@ -240,10 +288,13 @@ def main():
     #plot_results_tests(vary_tests(100, 5, 1000))
     #plot_results_defects(vary_defects(100, 60, 1000))
     #plot_results_alpha(vary_alpha(100, 60, 100))    
-    #plot_determine_tests(determine_num_tests(100, 10, 100, 0.05))
+    #plot_determine_tests(determine_num_tests(100, 10, 100, 0.05)
     #classifier = train_svc(10, 10, 1, 10000)
     #print(empirical_rate_svc(classifier, 10, 10, 1, 1000, np.random.default_rng()))
-    plot_results_tests_svc(vary_tests_svc(10, 1, 1000, np.random.default_rng()))
+    #plot_results_tests_svc(vary_tests_svc(10, 2, 1000, np.random.default_rng()))
+    #plot_results_tests_count(vary_tests_count(100, 5, 1000, rng1), vary_tests(100, 5, 1000))
+    plot_results_defects_count(vary_defects_count(100, 60, 1000, rng1), vary_defects(100, 60, 1000))
+
     
 if __name__ == "__main__":
     main()
