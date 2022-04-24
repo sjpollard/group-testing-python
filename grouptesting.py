@@ -166,6 +166,50 @@ def vary_defects_count(num_items, num_tests, size, rng):
         results[i - 1] = empirical_rate_count(num_items, num_tests, i, size, rng)
     return results.T
 
+def train_svc_count(num_items, num_tests, size):
+    x_train = np.empty((size, (num_items + 1) * num_tests))
+    y_train = np.empty(size)
+    for j in range(1, num_items + 1):
+        for i in range(int(size/num_items)):
+            gen = test_generator(num_items, num_tests, j, rng2)
+            x_train[i + (j - 1) * int(size/num_items)] = np.hstack((gen[0], gen[1])).flatten()
+            y_train[i + (j - 1) * int(size/num_items)] = len(gen[2])
+    classifier = svm.SVC()
+    classifier.fit(x_train, y_train)
+    return classifier
+
+def svc_count_decoder(classifier, test_matrix, test_outcomes):
+    x = [np.hstack((test_matrix, test_outcomes)).flatten()]
+    y = classifier.predict(x)
+    return y[0]
+
+def empirical_rate_svc_count(classifier, num_items, num_tests, num_defect, size, rng):
+    correct_tests = np.array([[0, 0, 0, 0]])
+    for i in range(size):
+        sample = test_generator(num_items, num_tests, num_defect, rng)
+        correct_tests[0][0] += comp_decoder(sample[0], sample[1]).size == sample[2].size
+        correct_tests[0][1] += dd_decoder(sample[0], sample[1]).size == sample[2].size
+        correct_tests[0][2] += scomp_decoder(sample[0], sample[1]).size == sample[2].size
+        correct_tests[0][3] += svc_count_decoder(classifier, sample[0], sample[1]).size == sample[2].size
+    return(correct_tests/float(size))
+
+def vary_defect_svc_count(num_items, num_tests, size, rng):
+    results = np.zeros((num_items, 4))
+    classifier = train_svc_count(num_items, num_tests, 100000)
+    for i in range(1, num_items + 1):
+        results[i - 1] = empirical_rate_svc_count(classifier, num_items, num_tests, i, size, rng)
+    return results.T
+
+def plot_results_defects_svc_count(results):
+    plt.title("Success probability vs Defectives")
+    plt.scatter(range(1, results.shape[1] + 1), results[0], c="b", marker="x", label="COMPC")
+    plt.scatter(range(1, results.shape[1] + 1), results[1], c="r", marker="x", label="DDC")
+    plt.scatter(range(1, results.shape[1] + 1), results[2], c="g", marker="x", label="SCOMPC")
+    plt.scatter(range(1, results.shape[1] + 1), results[3], c="m", marker="x", label="GTSVMC")
+    plt.legend(loc='upper left')
+    plt.xlabel("Number of defectives")
+    plt.ylabel("Success probability")
+    plt.show()
 
 def plot_results_tests_svc(results):
     plt.title("Success probability vs Tests")
@@ -180,12 +224,12 @@ def plot_results_tests_svc(results):
 
 def plot_results_tests_count(results, results2):
     plt.title("Success probability vs Tests")
-    plt.scatter(range(1, results2.shape[1] + 1), results2[0], c="grey", marker="x")
-    plt.scatter(range(1, results2.shape[1] + 1), results2[1], c="grey", marker="x")
-    plt.scatter(range(1, results2.shape[1] + 1), results2[2], c="grey", marker="x")
-    plt.scatter(range(1, results.shape[1] + 1), results[0], c="b", marker="x", label="COMP")
-    plt.scatter(range(1, results.shape[1] + 1), results[1], c="r", marker="x", label="DD")
-    plt.scatter(range(1, results.shape[1] + 1), results[2], c="g", marker="x", label="SCOMP")
+    plt.scatter(range(1, results2.shape[1] + 1), results2[0], c="b", marker="x", label="COMP")
+    plt.scatter(range(1, results2.shape[1] + 1), results2[1], c="r", marker="x", label="DD")
+    plt.scatter(range(1, results2.shape[1] + 1), results2[2], c="g", marker="x", label="SCOMP")
+    plt.scatter(range(1, results.shape[1] + 1), results[0], c="b", marker=".", label="COMPC")
+    plt.scatter(range(1, results.shape[1] + 1), results[1], c="r", marker=".", label="DDC")
+    plt.scatter(range(1, results.shape[1] + 1), results[2], c="g", marker=".", label="SCOMPC")
     plt.legend(loc='upper left')
     plt.xlabel("Number of tests")
     plt.ylabel("Success probability")
@@ -193,13 +237,14 @@ def plot_results_tests_count(results, results2):
 
 def plot_results_defects_count(results, results2):
     plt.title("Success probability vs Defectives")
-    plt.scatter(range(1, results2.shape[1] + 1), results2[0], c="grey", marker="x")
-    plt.scatter(range(1, results2.shape[1] + 1), results2[1], c="grey", marker="x")
-    plt.scatter(range(1, results2.shape[1] + 1), results2[2], c="grey", marker="x")
-    plt.scatter(range(1, results.shape[1] + 1), results[0], c="b", marker="x", label="COMP")
-    plt.scatter(range(1, results.shape[1] + 1), results[1], c="r", marker="x", label="DD")
-    plt.scatter(range(1, results.shape[1] + 1), results[2], c="g", marker="x", label="SCOMP")
+    plt.scatter(range(1, results2.shape[1] + 1), results2[0], c="b", marker="x", label="COMP")
+    plt.scatter(range(1, results2.shape[1] + 1), results2[1], c="r", marker="x", label="DD")
+    plt.scatter(range(1, results2.shape[1] + 1), results2[2], c="g", marker="x", label="SCOMP")
+    plt.scatter(range(1, results.shape[1] + 1), results[0], c="b", marker=".", label="COMPC")
+    plt.scatter(range(1, results.shape[1] + 1), results[1], c="r", marker=".", label="DDC")
+    plt.scatter(range(1, results.shape[1] + 1), results[2], c="g", marker=".", label="SCOMPC")
     plt.legend(loc='upper right')
+    plt.xlim([0, 16])
     plt.xlabel("Number of defectives")
     plt.ylabel("Success probability")
     plt.show()
@@ -293,7 +338,8 @@ def main():
     #print(empirical_rate_svc(classifier, 10, 10, 1, 1000, np.random.default_rng()))
     #plot_results_tests_svc(vary_tests_svc(10, 2, 1000, np.random.default_rng()))
     #plot_results_tests_count(vary_tests_count(100, 5, 1000, rng1), vary_tests(100, 5, 1000))
-    plot_results_defects_count(vary_defects_count(100, 60, 1000, rng1), vary_defects(100, 60, 1000))
+    #plot_results_defects_count(vary_defects_count(100, 60, 1000, rng1), vary_defects(100, 60, 1000))
+    plot_results_defects_svc_count(vary_defect_svc_count(10, 10, 1000, np.random.default_rng()))
 
     
 if __name__ == "__main__":
