@@ -141,7 +141,7 @@ def empirical_rate_svc(classifier, num_items, num_tests, num_defect, size, rng):
 def vary_tests_svc(num_items, num_defect, size, rng):
     results = np.zeros((num_items, 4))
     for i in range(1, num_items + 1):
-        classifier = train_svc(num_items, i, num_defect, 100000)
+        classifier = train_svc(num_items, i, num_defect, 10000)
         results[i - 1] = empirical_rate_svc(classifier, num_items, i, num_defect, size, rng)
     return results.T
 
@@ -336,10 +336,11 @@ def main():
     #plot_determine_tests(determine_num_tests(100, 10, 100, 0.05)
     #classifier = train_svc(10, 10, 1, 10000)
     #print(empirical_rate_svc(classifier, 10, 10, 1, 1000, np.random.default_rng()))
+    #plot_results_tests_svc([1,2,3,4,5,6,7,8,9,10])
     #plot_results_tests_svc(vary_tests_svc(10, 2, 1000, np.random.default_rng()))
     #plot_results_tests_count(vary_tests_count(100, 5, 1000, rng1), vary_tests(100, 5, 1000))
     #plot_results_defects_count(vary_defects_count(100, 60, 1000, rng1), vary_defects(100, 60, 1000))
-    plot_results_defects_svc_count(vary_defect_svc_count(10, 10, 1000, np.random.default_rng()))
+    #plot_results_defects_svc_count(vary_defect_svc_count(10, 10, 1000, np.random.default_rng()))
 
     
 if __name__ == "__main__":
